@@ -245,18 +245,6 @@ button.chip { cursor: pointer; }
 .lvl b.txt { font-size: 15px; max-width: 8ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lvl small { text-transform: none; }
 
-/* Zorluğa göre kutu renkleri: 0 kolay (yeşil), 1 orta (turkuaz), 2 zor (kehribar), 3 çok zor (kırmızı) */
-#grid[data-diff="0"] { --tile: #DCEBDD; --tile-line: #B7D3BA; --found: #2E7D32; --on-found: #FFFFFF; }
-#grid[data-diff="2"] { --tile: #F7E7D0; --tile-line: #E5C8A0; --found: #A85A08; --on-found: #FFFFFF; }
-#grid[data-diff="3"] { --tile: #F6DADA; --tile-line: #E4B2B2; --found: #B3261E; --on-found: #FFFFFF; }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) #grid[data-diff="0"] { --tile: #1C3A2A; --tile-line: #2D5A41; --found: #6FD08A; --on-found: #06281A; }
-  :root:not([data-theme="light"]) #grid[data-diff="2"] { --tile: #3F2E17; --tile-line: #5E4526; --found: #F0A64A; --on-found: #3A2000; }
-  :root:not([data-theme="light"]) #grid[data-diff="3"] { --tile: #44201F; --tile-line: #6B3131; --found: #FF7B72; --on-found: #3A0A07; }
-}
-:root[data-theme="dark"] #grid[data-diff="0"] { --tile: #1C3A2A; --tile-line: #2D5A41; --found: #6FD08A; --on-found: #06281A; }
-:root[data-theme="dark"] #grid[data-diff="2"] { --tile: #3F2E17; --tile-line: #5E4526; --found: #F0A64A; --on-found: #3A2000; }
-:root[data-theme="dark"] #grid[data-diff="3"] { --tile: #44201F; --tile-line: #6B3131; --found: #FF7B72; --on-found: #3A0A07; }
 .cell.cat { box-shadow: inset 0 0 0 2.5px var(--warm); }
 .cell.cat.on { box-shadow: inset 0 0 0 2.5px var(--warm); }
 .fly { position: fixed; z-index: 40; border-radius: 22%; background: var(--found); color: var(--on-found); display: grid; place-items: center; font-family: var(--f-display); font-weight: 600; pointer-events: none; }
@@ -502,6 +490,10 @@ body.themed .wheel { box-shadow: 0 14px 40px rgba(0, 0, 0, .3), inset 0 0 0 1.5p
 .thfoot .btn { width: auto; margin: 0; padding-inline: 28px; }
 .thfoot .btn:disabled { opacity: .5; }
 .thcard.pick { border-color: var(--accent); box-shadow: 0 0 0 2.5px var(--accent); }
+.dtag { flex: none; padding: 5px 11px; border-radius: 999px; font: 700 12px/1 var(--f-ui); letter-spacing: .06em; text-transform: uppercase; background: var(--surface); border: 1.5px solid var(--line); color: var(--ink); }
+.dtag[data-d="0"] { color: #2e7d32; } .dtag[data-d="1"] { color: var(--accent); } .dtag[data-d="2"] { color: #b45f06; } .dtag[data-d="3"] { color: #c0282a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .dtag[data-d="0"] { color: #6fd08a; } :root:not([data-theme="light"]) .dtag[data-d="2"] { color: #f0a64a; } :root:not([data-theme="light"]) .dtag[data-d="3"] { color: #ff7b72; } }
+:root[data-theme="dark"] .dtag[data-d="0"] { color: #6fd08a; } :root[data-theme="dark"] .dtag[data-d="2"] { color: #f0a64a; } :root[data-theme="dark"] .dtag[data-d="3"] { color: #ff7b72; }
 /* Temalarım (ana sayfa) */
 .themes { width: 100%; margin-top: 8px; }
 .themes h2 { margin: 0; font: 700 20px/1.2 var(--f-display); display: flex; align-items: baseline; gap: 8px; }
@@ -624,6 +616,7 @@ body.themed .wheel { box-shadow: 0 14px 40px rgba(0, 0, 0, .3), inset 0 0 0 1.5p
   <header class="top">
     <button class="menubtn" id="menuBtn" type="button" aria-label="Menü"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <div class="lvl" id="lvlBtn"><small id="lvlSmall">BULMACA</small><b id="lvlNum">1</b></div>
+    <span class="dtag" id="diffTag" aria-label="Zorluk"></span>
     <div class="chips">
       <div class="chip" title="Bu bulmacada bulunan bonus kelimeler">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.8l2.7 6 6.5.6-4.9 4.3 1.5 6.4L12 16.7 6.2 20.1l1.5-6.4L2.8 9.4l6.5-.6z"/></svg>
@@ -1156,7 +1149,7 @@ function loadPuzzle(level, m, keep) {
   words = cur.w.map(([w, r, c, d]) => ({ w, r, c, d, cells: cellsOf(w, r, c, d) }));
   wordIndex = new Map(words.map(x => [x.w, x]));
   bonusAll = new Set(cur.b);
-  gridEl.dataset.diff = diffTier(difficulty(words));
+  { const dv = difficulty(words), dt = $('diffTag'); dt.textContent = diffName(dv); dt.dataset.d = diffTier(dv); }
   buildGrid();
   filled = new Set(keep ? S.filled.filter(k => cellMap.has(k)) : []);
   bonusSet = new Set(keep ? S.bonus.filter(w => bonusAll.has(w)) : []);
@@ -2061,9 +2054,13 @@ function sceneHTML(t, live) {
 }
 const curTheme = () => { const t = THEME_BY[S.theme]; return t && thOpen(t) ? t : THEMES[0]; };
 let sceneShown = '';
+const thLum = h => { const n = parseInt(h.slice(1), 16), f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(n >> 16 & 255) + .7152 * f(n >> 8 & 255) + .0722 * f(n & 255); };
 function applyTheme() {
   const t = curTheme(), el = $('scene');
   document.body.classList.toggle('themed', !!t.bg);
+  const gs = gridEl.style;
+  if (t.bg) { const f = t.c[0], lum = thLum(f); gs.setProperty('--found', f); gs.setProperty('--on-found', lum > .32 ? '#14202e' : '#ffffff'); gs.setProperty('--tile', 'color-mix(in srgb, ' + f + ' 16%, var(--surface))'); gs.setProperty('--tile-line', 'color-mix(in srgb, ' + f + ' 38%, var(--surface))'); }
+  else ['--found', '--on-found', '--tile', '--tile-line'].forEach(k => gs.removeProperty(k));
   document.body.style.setProperty('--hy1', t.c[0]); document.body.style.setProperty('--hy2', t.c[1]);
   if (sceneShown !== t.id) { el.innerHTML = sceneHTML(t, true); sceneShown = t.id; }
 }
@@ -2146,7 +2143,8 @@ function hype(kind, n) {
 
 // ===== app3: bölüm, çark kapısı, günün bulmacası, zamanlayıcı, menü =====
 const catNames = gen.catNames;
-const GATE_SECS = 120, DAILY_SECS = 200;
+const GATE_SECS = 120, DAILY_SECS = 300;
+const durTxt = s => s % 60 === 0 ? (s / 60) + ' dk' : s + ' sn';
 const levelSeed = (i, bm) => ((S.seed + Math.imul(i + 1, 0x9E3779B1)) ^ Math.imul(bm || 0, 0x85EBCA6B)) >>> 0;
 const isGateLevel = i => (i + 1) % 5 === 0 && i < N - 1;
 const dailySeed = () => (Math.imul(todayKey(), 0x9E3779B1) ^ 0x5bd1e995) >>> 0;
@@ -2267,7 +2265,7 @@ $('doneHome').addEventListener('click', () => doAction('home'));
 $('doneAlt').addEventListener('click', () => doAction(altAction));
 
 // ---- Çark kapısı: her 5. bölümden sonra ----
-let spinRot = 0, spinBusy = false, spinCat = -1, spinReady = false;
+let lastSpinCat = -1, spinRot = 0, spinBusy = false, spinCat = -1, spinReady = false;
 
 // ---- Kategori resimleri (çizim) ----
 const CAT_ART = {
@@ -2302,7 +2300,7 @@ function buildSpinWheel() {
 function openSpin() {
   doneEl.hidden = true; sheetEl.hidden = true;
   spinCat = -1; spinReady = false; spinBusy = false; locked = true;
-  $('spinSub').textContent = 'Çevir, çıkan alandaki bulmacayı ' + GATE_SECS + ' saniyede çöz.';
+  $('spinSub').textContent = 'Çevir, çıkan alandaki bulmacayı ' + (GATE_SECS / 60) + ' dakikada çöz.';
   $('spinBtn').textContent = 'Çevir'; $('spinBtn').disabled = false;
   $('spinPic').hidden = true; $('spinPic').innerHTML = '';
   spinEl.hidden = false;
@@ -2311,10 +2309,13 @@ $('spinBtn').addEventListener('click', () => {
   if (spinBusy) return;
   if (spinReady) { startGate(); return; }
   spinBusy = true; $('spinBtn').disabled = true;
-  spinCat = Math.floor(Math.random() * catNames.length);
+  const prevCat = lastSpinCat;
+  do { spinCat = Math.floor(Math.random() * catNames.length); } while (spinCat === prevCat && catNames.length > 1);
+  lastSpinCat = spinCat;
   const step = 360 / catNames.length;
   const base = Math.ceil(spinRot / 360) * 360;
-  spinRot = base + 360 * 5 + (360 - (spinCat + .5) * step);
+  const off = (Math.random() * .76 - .38) * step;   // dilimin içinde rastgele bir noktada dur
+  spinRot = base + 360 * (4 + Math.floor(Math.random() * 3)) + (360 - (spinCat + .5) * step + off);
   const g = $('spinG');
   g.style.transition = reduceMotion() ? 'none' : 'transform 3.4s cubic-bezier(.12,.72,.14,1)';
   g.style.transform = 'rotate(' + spinRot + 'deg)';
@@ -2323,7 +2324,7 @@ $('spinBtn').addEventListener('click', () => {
     spinBusy = false; spinReady = true;
     $('spinSub').textContent = 'Alan: ' + catNames[spinCat] + '. Bu alanın kelimeleri +10 sn kazandırır.';
     $('spinPic').innerHTML = catArt(catNames[spinCat], 84); $('spinPic').hidden = false;
-    $('spinBtn').textContent = 'Başla · ' + GATE_SECS + ' sn'; $('spinBtn').disabled = false;
+    $('spinBtn').textContent = 'Başla · ' + durTxt(GATE_SECS); $('spinBtn').disabled = false;
     sfx.ok(); buzz(30);
   }, reduceMotion() ? 50 : 3500);
 });
@@ -2443,7 +2444,7 @@ function renderSheet() {
   if (view === 'menu') {
     $('sheetTitle').textContent = 'Harf Çarkı';
     const d = dailyState();
-    const dsub = !d ? DAILY_SECS + ' sn · ipucu yok' : d.status === 'done' ? starText(d.stars) + ' · ' + fmtTime(d.secs * 1000) : 'Süre doldu';
+    const dsub = !d ? durTxt(DAILY_SECS) + ' · ipucu yok' : d.status === 'done' ? starText(d.stars) + ' · ' + fmtTime(d.secs * 1000) : 'Süre doldu';
     const earned = BADGES.filter(b => tierOf(b) > 0).length;
     const tile = (a, t, s) => '<button type="button" class="tile" data-a="' + a + '"><b>' + t + '</b><span>' + s + '</span></button>';
     h += '<div class="stat">Seri: <b>' + curStreak() + '</b> gün · En iyi: <b>' + S.bestStreak + '</b></div><div class="tiles">';
@@ -2631,7 +2632,7 @@ function renderHome() {
   const d = dailyState();
   $('homeDaily').classList.toggle('done', !!d && d.status === 'done');
   $('homeDot').innerHTML = CAL_SVG + (d && d.status === 'done' ? '<small>★' + d.stars + '</small>' : '');
-  $('homeDailyS').textContent = !d ? DAILY_SECS + ' sn · ipucu yok · günde bir kez' : d.status === 'done' ? 'Tamamlandı · ' + fmtTime(d.secs * 1000) : 'Süre doldu · yarın yeni bulmaca';
+  $('homeDailyS').textContent = !d ? durTxt(DAILY_SECS) + ' · ipucu yok · günde bir kez' : d.status === 'done' ? 'Tamamlandı · ' + fmtTime(d.secs * 1000) : 'Süre doldu · yarın yeni bulmaca';
   const IC = {
     lv: '<svg viewBox="0 0 24 24"><path d="M6 21V4" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/><path d="M6 5h11l-2.5 4 2.5 4H6z" fill="currentColor"/></svg>',
     st: '<svg viewBox="0 0 24 24"><path d="M12 2.8l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.1l-5.6 2.9 1.1-6.2L3 9.4l6.2-.9z" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
